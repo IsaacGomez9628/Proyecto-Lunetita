@@ -836,27 +836,16 @@
 
     <script>
       // API URL
-      const API_BASE_URL = "http://127.0.0.1:8000"; // Ajusta esta URL según tu configuración
-      const API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // Token de ejemplo, ajusta según tu configuración
+      const API_BASE_URL = "http://127.0.0.1:8000";
+
+      let currentProviders = [];
+      let currentOrders = [];
+      let currentProducts = [];
+      let orderDetails = [];
+      let selectedProviderId = null;
+      axios.defaults.baseURL = API_BASE_URL; // Ajusta esta URL según tu configuración
 
       console.log("API Base URL:", API_BASE_URL);
-
-      // Agrega esto para probar
-      axios
-        .get("/proveedores/")
-        .then((response) => {
-          console.log("¡Conexión exitosa!", response.data);
-        })
-        .catch((error) => {
-          console.error(
-            "Error de conexión:",
-            error.response?.data || error.message
-          );
-        });
-
-      // Configuration for axios
-      axios.defaults.baseURL = API_BASE_URL;
-      axios.defaults.headers.common["Authorization"] = `Bearer ${API_TOKEN}`;
 
       // Añade estos interceptores para depuración
       axios.interceptors.request.use(
@@ -890,174 +879,280 @@
         }
       );
 
-      // Global application state
-      let currentProviders = [];
-      let currentOrders = [];
-      let currentProducts = [];
-      let orderDetails = [];
-      let selectedProviderId = null;
+      function initDOMReferences() {
+        console.log("Inicializando referencias DOM...");
 
-      // DOM Elements
-      const proveedoresTab = document.getElementById("proveedoresTab");
-      const pedidosTab = document.getElementById("pedidosTab");
-      const proveedoresContent = document.getElementById("proveedoresContent");
-      const pedidosContent = document.getElementById("pedidosContent");
-      const proveedoresGrid = document.getElementById("proveedoresGrid");
-      const pedidosTableBody = document.getElementById("pedidosTableBody");
-      const searchInput = document.getElementById("searchInput");
-      const searchBtn = document.getElementById("searchBtn");
-      const categoryFilter = document.getElementById("categoryFilter");
-      const statusFilter = document.getElementById("statusFilter");
+        // Tab navigation
+        window.proveedoresTab = document.getElementById("proveedoresTab");
+        window.pedidosTab = document.getElementById("pedidosTab");
+        window.proveedoresContent =
+          document.getElementById("proveedoresContent");
+        window.pedidosContent = document.getElementById("pedidosContent");
+        window.proveedoresGrid = document.getElementById("proveedoresGrid");
+        window.pedidosTableBody = document.getElementById("pedidosTableBody");
+        window.searchInput = document.getElementById("searchInput");
+        window.searchBtn = document.getElementById("searchBtn");
+        window.categoryFilter = document.getElementById("categoryFilter");
+        window.statusFilter = document.getElementById("statusFilter");
 
-      // Modal Elements - Provider
-      const providerModal = document.getElementById("providerModal");
-      const closeProviderModal = document.getElementById("closeProviderModal");
-      const addProviderBtn = document.getElementById("addProviderBtn");
-      const providerForm = document.getElementById("providerForm");
-      const modalTitle = document.getElementById("modalTitle");
-      const providerId = document.getElementById("providerId");
-      const providerName = document.getElementById("providerName");
-      const providerEmail = document.getElementById("providerEmail");
-      const providerPhone = document.getElementById("providerPhone");
-      const providerDelivery = document.getElementById("providerDelivery");
-      const providerAddress = document.getElementById("providerAddress");
-      const providerCity = document.getElementById("providerCity");
-      const providerState = document.getElementById("providerState");
-      const providerZip = document.getElementById("providerZip");
-      const providerNotes = document.getElementById("providerNotes");
-      const cancelProviderBtn = document.getElementById("cancelProviderBtn");
+        // Proveedores modals
+        window.providerModal = document.getElementById("providerModal");
+        window.closeProviderModal =
+          document.getElementById("closeProviderModal");
+        window.addProviderBtn = document.getElementById("addProviderBtn");
+        window.providerForm = document.getElementById("providerForm");
+        window.modalTitle = document.getElementById("modalTitle");
+        window.providerId = document.getElementById("providerId");
+        window.providerName = document.getElementById("providerName");
+        window.providerEmail = document.getElementById("providerEmail");
+        window.providerPhone = document.getElementById("providerPhone");
+        window.providerDelivery = document.getElementById("providerDelivery");
+        window.providerAddress = document.getElementById("providerAddress");
+        window.providerCity = document.getElementById("providerCity");
+        window.providerState = document.getElementById("providerState");
+        window.providerZip = document.getElementById("providerZip");
+        window.providerNotes = document.getElementById("providerNotes");
+        window.cancelProviderBtn = document.getElementById("cancelProviderBtn");
 
-      // Modal Elements - Order
-      const orderModal = document.getElementById("orderModal");
-      const closeOrderModal = document.getElementById("closeOrderModal");
-      const addOrderBtn = document.getElementById("addOrderBtn");
-      const orderForm = document.getElementById("orderForm");
-      const orderProvider = document.getElementById("orderProvider");
-      const orderExpectedDate = document.getElementById("orderExpectedDate");
-      const orderNotes = document.getElementById("orderNotes");
-      const orderDetailsList = document.getElementById("orderDetailsList");
-      const orderSubtotal = document.getElementById("orderSubtotal");
-      const orderTax = document.getElementById("orderTax");
-      const orderTotal = document.getElementById("orderTotal");
-      const cancelOrderBtn = document.getElementById("cancelOrderBtn");
-      const addProductBtn = document.getElementById("addProductBtn");
+        // Pedidos modals
+        window.orderModal = document.getElementById("orderModal");
+        window.closeOrderModal = document.getElementById("closeOrderModal");
+        window.addOrderBtn = document.getElementById("addOrderBtn");
+        window.orderForm = document.getElementById("orderForm");
+        window.orderProvider = document.getElementById("orderProvider");
+        window.orderExpectedDate = document.getElementById("orderExpectedDate");
+        window.orderNotes = document.getElementById("orderNotes");
+        window.orderDetailsList = document.getElementById("orderDetailsList");
+        window.orderSubtotal = document.getElementById("orderSubtotal");
+        window.orderTax = document.getElementById("orderTax");
+        window.orderTotal = document.getElementById("orderTotal");
+        window.cancelOrderBtn = document.getElementById("cancelOrderBtn");
+        window.addProductBtn = document.getElementById("addProductBtn");
 
-      // Modal Elements - Product
-      const productModal = document.getElementById("productModal");
-      const closeProductModal = document.getElementById("closeProductModal");
-      const productForm = document.getElementById("productForm");
-      const productSelect = document.getElementById("productSelect");
-      const productQuantity = document.getElementById("productQuantity");
-      const productPrice = document.getElementById("productPrice");
-      const cancelProductBtn = document.getElementById("cancelProductBtn");
+        // Productos modals
+        window.productModal = document.getElementById("productModal");
+        window.closeProductModal = document.getElementById("closeProductModal");
+        window.productForm = document.getElementById("productForm");
+        window.productSelect = document.getElementById("productSelect");
+        window.productQuantity = document.getElementById("productQuantity");
+        window.productPrice = document.getElementById("productPrice");
+        window.cancelProductBtn = document.getElementById("cancelProductBtn");
 
-      // Modal Elements - Details
-      const detailsModal = document.getElementById("detailsModal");
-      closeProductModal.addEventListener("click", handleCloseProductModal);
-      cancelProductBtn.addEventListener("click", handleCloseProductModal);
-      const detailsTitle = document.getElementById("detailsTitle");
-      const detailsNumber = document.getElementById("detailsNumber");
-      const detailsStatus = document.getElementById("detailsStatus");
-      const detailsProvider = document.getElementById("detailsProvider");
-      const detailsDate = document.getElementById("detailsDate");
-      const detailsNotes = document.getElementById("detailsNotes");
-      const detailsProductList = document.getElementById("detailsProductList");
-      const detailsSubtotal = document.getElementById("detailsSubtotal");
-      const detailsTax = document.getElementById("detailsTax");
-      const detailsTotal = document.getElementById("detailsTotal");
+        // Detalles modals
+        window.detailsModal = document.getElementById("detailsModal");
+        window.detailsTitle = document.getElementById("detailsTitle");
+        window.detailsNumber = document.getElementById("detailsNumber");
+        window.detailsStatus = document.getElementById("detailsStatus");
+        window.detailsProvider = document.getElementById("detailsProvider");
+        window.detailsDate = document.getElementById("detailsDate");
+        window.detailsNotes = document.getElementById("detailsNotes");
+        window.detailsProductList =
+          document.getElementById("detailsProductList");
+        window.detailsSubtotal = document.getElementById("detailsSubtotal");
+        window.detailsTax = document.getElementById("detailsTax");
+        window.detailsTotal = document.getElementById("detailsTotal");
+        window.closeDetailsModal = document.getElementById("closeDetailsModal");
+        window.closeDetailsBtn = document.getElementById("closeDetailsBtn");
+      }
 
-      // Event Listeners
-
-      // Tab Navigation
-      proveedoresTab.addEventListener("click", () => {
-        proveedoresTab.classList.add(
-          "text-red-600",
-          "after:content-['']",
-          "after:absolute",
-          "after:w-full",
-          "after:h-0.5",
-          "after:bg-red-600",
-          "after:bottom-0",
-          "after:left-0"
+      function setupAxiosInterceptors() {
+        axios.interceptors.request.use(
+          (request) => {
+            console.log("Enviando solicitud a:", request.url);
+            console.log("Headers:", request.headers);
+            return request;
+          },
+          (error) => {
+            console.error("Error en la solicitud:", error);
+            return Promise.reject(error);
+          }
         );
-        pedidosTab.classList.remove(
-          "text-red-600",
-          "after:content-['']",
-          "after:absolute",
-          "after:w-full",
-          "after:h-0.5",
-          "after:bg-red-600",
-          "after:bottom-0",
-          "after:left-0"
-        );
-        proveedoresContent.classList.remove("hidden");
-        proveedoresContent.classList.add("block");
-        pedidosContent.classList.add("hidden");
-      });
+      }
 
-      pedidosTab.addEventListener("click", () => {
-        pedidosTab.classList.add(
-          "text-red-600",
-          "after:content-['']",
-          "after:absolute",
-          "after:w-full",
-          "after:h-0.5",
-          "after:bg-red-600",
-          "after:bottom-0",
-          "after:left-0"
-        );
-        proveedoresTab.classList.remove(
-          "text-red-600",
-          "after:content-['']",
-          "after:absolute",
-          "after:w-full",
-          "after:h-0.5",
-          "after:bg-red-600",
-          "after:bottom-0",
-          "after:left-0"
-        );
-        pedidosContent.classList.remove("hidden");
-        proveedoresContent.classList.add("hidden");
-        loadOrders();
-      });
+      // Función para inicializar la aplicación
+      async function initApp() {
+        console.log("Inicializando aplicación...");
 
-      // Search
-      searchBtn.addEventListener("click", () => {
-        loadProviders();
-      });
+        try {
+          // Primero autenticar
+          await authenticate();
 
-      searchInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          loadProviders();
+          // Configurar event listeners
+          setupEventListeners();
+
+          // Luego cargar datos
+          await loadProviders();
+        } catch (error) {
+          console.error("Error de inicialización:", error);
+
+          // Cargar datos de muestra como fallback
+          currentProviders = getMockProviders();
+          renderProviders();
+
+          showNotification(
+            "Error de inicialización. Usando datos de muestra.",
+            "error"
+          );
         }
-      });
+      }
 
-      // Filters
-      categoryFilter.addEventListener("change", loadProviders);
-      statusFilter.addEventListener("change", loadProviders);
+      // Función de autenticación usando la ruta correcta
+      async function authenticate() {
+        try {
+          console.log("Autenticando...");
 
-      // Provider Modal
-      addProviderBtn.addEventListener("click", openAddProviderModal);
-      closeProviderModal.addEventListener("click", closeProviderModals);
-      cancelProviderBtn.addEventListener("click", closeProviderModals);
-      providerForm.addEventListener("submit", saveProvider);
+          // Preparar datos de autenticación
+          const authData = new URLSearchParams();
+          authData.append("username", "admin");
+          authData.append("password", "admin123");
 
-      // Order Modal
-      addOrderBtn.addEventListener("click", openAddOrderModal);
-      closeOrderModal.addEventListener("click", closeOrderModals);
-      cancelOrderBtn.addEventListener("click", closeOrderModals);
-      orderForm.addEventListener("submit", saveOrder);
+          // Realizar petición de autenticación
+          const response = await axios.post("/auth/login", authData, {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          });
 
-      // Product Modal
-      addProductBtn.addEventListener("click", openAddProductModal);
-      closeProductModal.addEventListener("click", closeProductModal);
-      cancelProductBtn.addEventListener("click", closeProductModal);
-      productForm.addEventListener("submit", addProductToOrder);
-      productSelect.addEventListener("change", updateProductPrice);
+          // Verificar respuesta
+          if (response.data && response.data.access_token) {
+            const token = response.data.access_token;
+            console.log("✅ Token obtenido:", token);
 
-      // Details Modal
-      closeDetailsModal.addEventListener("click", closeDetailsModal);
-      closeDetailsBtn.addEventListener("click", closeDetailsModal);
+            // Configurar token para todas las peticiones
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            return true;
+          } else {
+            throw new Error("No se obtuvo token de acceso");
+          }
+        } catch (error) {
+          console.error("Error de autenticación:", error);
+          throw error;
+        }
+      }
+
+      // Configurar interceptores de axios para depuración
+      axios.interceptors.request.use(
+        (request) => {
+          console.log("Enviando solicitud a:", request.url);
+          console.log("Headers:", request.headers);
+          return request;
+        },
+        (error) => {
+          console.error("Error en la solicitud:", error);
+          return Promise.reject(error);
+        }
+      );
+
+      axios.interceptors.response.use(
+        (response) => {
+          console.log("Respuesta recibida de:", response.config.url);
+          console.log("Código de estado:", response.status);
+          return response;
+        },
+        (error) => {
+          console.error("Error en la respuesta:", error);
+          if (error.response) {
+            console.error("Datos del error:", error.response.data);
+            console.error("Estado HTTP:", error.response.status);
+          }
+          return Promise.reject(error);
+        }
+      );
+
+      function setupEventListeners() {
+        console.log("Configurando event listeners...");
+
+        // Tab Navigation
+        proveedoresTab.addEventListener("click", () => {
+          proveedoresTab.classList.add(
+            "text-red-600",
+            "after:content-['']",
+            "after:absolute",
+            "after:w-full",
+            "after:h-0.5",
+            "after:bg-red-600",
+            "after:bottom-0",
+            "after:left-0"
+          );
+          pedidosTab.classList.remove(
+            "text-red-600",
+            "after:content-['']",
+            "after:absolute",
+            "after:w-full",
+            "after:h-0.5",
+            "after:bg-red-600",
+            "after:bottom-0",
+            "after:left-0"
+          );
+          proveedoresContent.classList.remove("hidden");
+          proveedoresContent.classList.add("block");
+          pedidosContent.classList.add("hidden");
+        });
+
+        pedidosTab.addEventListener("click", () => {
+          pedidosTab.classList.add(
+            "text-red-600",
+            "after:content-['']",
+            "after:absolute",
+            "after:w-full",
+            "after:h-0.5",
+            "after:bg-red-600",
+            "after:bottom-0",
+            "after:left-0"
+          );
+          proveedoresTab.classList.remove(
+            "text-red-600",
+            "after:content-['']",
+            "after:absolute",
+            "after:w-full",
+            "after:h-0.5",
+            "after:bg-red-600",
+            "after:bottom-0",
+            "after:left-0"
+          );
+          pedidosContent.classList.remove("hidden");
+          proveedoresContent.classList.add("hidden");
+          loadOrders();
+        });
+
+        // Búsqueda y filtros
+        searchBtn.addEventListener("click", loadProviders);
+        searchInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            loadProviders();
+          }
+        });
+        categoryFilter.addEventListener("change", loadProviders);
+        statusFilter.addEventListener("change", loadProviders);
+
+        // Modal de proveedor
+        addProviderBtn.addEventListener("click", openAddProviderModal);
+        closeProviderModal.addEventListener("click", closeProviderModals);
+        cancelProviderBtn.addEventListener("click", closeProviderModals);
+        providerForm.addEventListener("submit", saveProvider);
+
+        // Modal de pedidos
+        addOrderBtn.addEventListener("click", openAddOrderModal);
+        closeOrderModal.addEventListener("click", closeOrderModals);
+        cancelOrderBtn.addEventListener("click", closeOrderModals);
+        orderForm.addEventListener("submit", saveOrder);
+
+        // Modal de productos
+        addProductBtn.addEventListener("click", openAddProductModal);
+        closeProductModal.addEventListener("click", handleCloseProductModal);
+        cancelProductBtn.addEventListener("click", handleCloseProductModal);
+        productForm.addEventListener("submit", addProductToOrder);
+        productSelect.addEventListener("change", updateProductPrice);
+
+        // Modal de detalles
+        if (closeDetailsModal) {
+          closeDetailsModal.addEventListener("click", handleCloseDetailsModal);
+        }
+
+        if (closeDetailsBtn) {
+          closeDetailsBtn.addEventListener("click", handleCloseDetailsModal);
+        }
+      }
 
       document.addEventListener("DOMContentLoaded", function () {
         // Asegúrate de que todos los elementos existan antes de asignarles event listeners
@@ -1079,110 +1174,43 @@
         }
       });
 
-      // Functions for Providers
-
       // Load providers from API
-      function loadProviders() {
+      async function loadProviders() {
         console.log("Iniciando carga de proveedores...");
-        const searchTerm = searchInput.value;
-        const statusValue = statusFilter.value;
-        const categoryValue = categoryFilter.value;
 
-        console.log("Parámetros de búsqueda:", {
-          searchTerm,
-          statusValue,
-          categoryValue,
-        });
+        try {
+          // Agregar filtro por estado activo
+          const response = await axios.get("/proveedores/?id_status=1");
+          console.log("✅ Proveedores cargados correctamente:", response.data);
+          currentProviders = response.data;
+          renderProviders();
+          return response.data;
+        } catch (error) {
+          console.error("❌ Error cargando proveedores:", error);
 
-        // Build query parameters
-        let params = {};
-        if (searchTerm) {
-          params.search = searchTerm;
-        }
-
-        // In a real API, you might have more filters like status and category
-        // For demonstration, we'll use mock data
-
-        // API call using axios
-        console.log(
-          "Enviando solicitud GET a /proveedores con parámetros:",
-          params
-        );
-
-        axios
-          .get("/proveedores", { params })
-          .then((response) => {
-            console.log("Respuesta exitosa de proveedores:", response.data);
-            currentProviders = response.data;
-            console.log("Proveedores procesados:", currentProviders.length);
-            renderProviders();
-          })
-          .catch((error) => {
-            console.error("Error cargando proveedores:", error);
-
-            if (error.response) {
-              console.error("Detalles del error:", error.response.data);
-              console.error("Estado HTTP:", error.response.status);
-            } else if (error.request) {
-              console.error(
-                "No se recibió respuesta del servidor. Petición:",
-                error.request
-              );
-            } else {
-              console.error("Error al configurar la solicitud:", error.message);
-            }
-
-            console.log("Cargando datos de muestra como fallback...");
-            currentProviders = getMockProviders();
-            console.log(
-              "Proveedores de muestra cargados:",
-              currentProviders.length
+          // Si tu API no soporta el filtrado por query params, puedes hacerlo manualmente
+          try {
+            const response = await axios.get("/proveedores/");
+            currentProviders = response.data.filter(
+              (provider) => provider.id_status === 1
             );
             renderProviders();
-
+            return currentProviders;
+          } catch {
+            // Si fallan ambos intentos, usa datos de muestra filtrados
+            currentProviders = getMockProviders().filter(
+              (p) => p.id_status === 1
+            );
+            renderProviders();
             showNotification(
               "Error al cargar proveedores. Usando datos de muestra.",
               "error"
             );
-          });
+          }
+
+          throw error;
+        }
       }
-
-      // Primero necesitas autenticarte para obtener un token
-      axios
-        .post("http://127.0.0.1:8000/api/auth/token", {
-          username: "tu_usuario",
-          password: "tu_contraseña",
-        })
-        .then((response) => {
-          // Guarda el token que recibas
-          const token = response.data.access_token; // O como se llame en tu API
-
-          // Configura Axios para usar este token en futuras peticiones
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-          // Ahora puedes cargar los datos
-          loadProviders();
-        })
-        .catch((error) => {
-          console.error("Error al obtener token:", error);
-        });
-
-      // Para OAuth2 Password Flow (común en FastAPI)
-      const formData = new FormData();
-      formData.append("username", "tu_usuario");
-      formData.append("password", "tu_contraseña");
-
-      axios
-        .post("http://127.0.0.1:8000/api/token", formData, {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        })
-        .then((response) => {
-          const token = response.data.access_token;
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          loadProviders();
-        });
 
       // Render providers in the grid
       function renderProviders() {
@@ -1197,10 +1225,10 @@
         if (currentProviders.length === 0) {
           console.log("No hay proveedores para mostrar.");
           proveedoresGrid.innerHTML = `
-                    <div class="col-span-3 p-8 text-center text-gray-500">
-                        No se encontraron proveedores. Intenta con otros filtros o agrega uno nuevo.
-                    </div>
-                `;
+                          <div class="col-span-3 p-8 text-center text-gray-500">
+                              No se encontraron proveedores. Intenta con otros filtros o agrega uno nuevo.
+                          </div>
+                      `;
           return;
         }
 
@@ -1218,57 +1246,73 @@
           const firstLetter = provider.nombre.charAt(0).toUpperCase();
 
           providerCard.innerHTML = `
-                    <div class="bg-gray-100 p-5 flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-lg bg-gray-300 flex items-center justify-center font-bold text-2xl text-gray-600">
-                            ${firstLetter}
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg">${
-                              provider.nombre
-                            }</h3>
-                            <div class="text-sm text-gray-600">${getCategoryByName(
-                              provider.nombre
-                            )}</div>
-                        </div>
-                    </div>
-                    <div class="p-5">
-                        <div class="mb-3">
-                            <div class="text-xs text-gray-500">Contacto</div>
-                            <div class="font-medium">${provider.email}</div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="text-xs text-gray-500">Teléfono</div>
-                            <div class="font-medium">${
-                              provider.telefono || "No especificado"
-                            }</div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="text-xs text-gray-500">Tiempo de entrega</div>
-                            <div class="font-medium">${
-                              provider.tiempo_entrega_promedio
-                                ? provider.tiempo_entrega_promedio + " días"
-                                : "No especificado"
-                            }</div>
-                        </div>
-                        <div class="mb-4">
-                            <div class="text-xs text-gray-500">Estado</div>
-                            <div class="font-medium">${
-                              provider.id_status === 1 ? "Activo" : "Inactivo"
-                            }</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="flex-1 py-2 px-3 bg-gray-100 text-gray-800 rounded font-medium text-sm hover:bg-gray-200 transition" onclick="editProvider(${
-                              provider.id_proveedor
-                            })">Editar</button>
-                            <button class="flex-1 py-2 px-3 bg-red-50 text-red-700 rounded font-medium text-sm hover:bg-red-100 transition" onclick="deleteProvider(${
-                              provider.id_proveedor
-                            })">Eliminar</button>
-                            <button class="flex-1 py-2 px-3 bg-green-50 text-green-700 rounded font-medium text-sm hover:bg-green-100 transition" onclick="createOrder(${
-                              provider.id_proveedor
-                            })">Ordenar</button>
-                        </div>
-                    </div>
-                `;
+                          <div class="bg-gray-100 p-5 flex items-center gap-4">
+                              <div class="w-14 h-14 rounded-lg bg-gray-300 flex items-center justify-center font-bold text-2xl text-gray-600">
+                                  ${firstLetter}
+                              </div>
+                              <div>
+                                  <h3 class="font-semibold text-lg">${
+                                    provider.nombre
+                                  }</h3>
+                                  <div class="text-sm text-gray-600">${getCategoryByName(
+                                    provider.nombre
+                                  )}</div>
+                              </div>
+                          </div>
+                          <div class="p-5">
+                              <div class="mb-3">
+                                  <div class="text-xs text-gray-500">Contacto</div>
+                                  <div class="font-medium">${
+                                    provider.email
+                                  }</div>
+                              </div>
+                              <div class="mb-3">
+                                  <div class="text-xs text-gray-500">Teléfono</div>
+                                  <div class="font-medium">${
+                                    provider.telefono || "No especificado"
+                                  }</div>
+                              </div>
+                              <div class="mb-3">
+                                  <div class="text-xs text-gray-500">Tiempo de entrega</div>
+                                  <div class="font-medium">${
+                                    provider.tiempo_entrega_promedio
+                                      ? provider.tiempo_entrega_promedio +
+                                        " días"
+                                      : "No especificado"
+                                  }</div>
+                              </div>
+                              <div class="mb-4">
+                                    <div class="text-xs text-gray-500">Estado</div>
+                                    <div class="font-medium flex items-center">
+                                        <span class="h-2 w-2 rounded-full ${
+                                          provider.id_status === 1
+                                            ? "bg-green-500"
+                                            : "bg-red-500"
+                                        } mr-2"></span>
+                                        ${
+                                          provider.id_status === 1
+                                            ? "Activo"
+                                            : "Inactivo"
+                                        }
+                                    </div>
+                                </div>
+                              <div class="flex gap-2">
+                                  <button class="flex-1 py-2 px-3 bg-gray-100 text-gray-800 rounded font-medium text-sm hover:bg-gray-200 transition" onclick="editProvider(${
+                                    provider.id_proveedor
+                                  })">Editar</button>
+                                  <button class="flex-1 py-2 px-3 bg-red-50 text-red-700 rounded font-medium text-sm hover:bg-red-100 transition" onclick="deleteProvider(${
+                                    provider.id_proveedor
+                                  })">Eliminar</button>
+                                  <button class="flex-1 py-2 px-3 bg-green-50 text-green-700 rounded font-medium text-sm hover:bg-green-100 transition" onclick="createOrder(${
+                                    provider.id_proveedor
+                                  })">Ordenar</button>
+                                  <button class="flex-1 py-2 px-3 bg-blue-50 text-blue-700 rounded font-medium text-sm hover:bg-blue-100 transition" onclick="loadProviderOrders(${
+                                    provider.id_proveedor
+                                  })">Ver Pedidos
+                                    </button>
+                              </div>
+                          </div>
+                      `;
 
           proveedoresGrid.appendChild(providerCard);
         });
@@ -1384,12 +1428,29 @@
         axios
           .delete(`/proveedores/${id}`)
           .then((response) => {
+            // Eliminar el proveedor de la lista actual sin necesidad de recargar
+            currentProviders = currentProviders.filter(
+              (p) => p.id_proveedor !== id
+            );
+            renderProviders();
+
             showNotification("Proveedor eliminado correctamente", "success");
-            loadProviders();
           })
           .catch((error) => {
-            console.error("Error deleting provider:", error);
-            showNotification("Error al eliminar proveedor", "error");
+            console.error("Error al eliminar proveedor:", error);
+
+            if (
+              error.response &&
+              error.response.data &&
+              error.response.data.detail
+            ) {
+              showNotification(`Error: ${error.response.data.detail}`, "error");
+            } else {
+              showNotification(
+                "Error al eliminar proveedor. Intente nuevamente.",
+                "error"
+              );
+            }
           });
       }
 
@@ -1428,12 +1489,12 @@
 
         if (currentOrders.length === 0) {
           pedidosTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">
-                            No se encontraron pedidos. Intenta crear uno nuevo.
-                        </td>
-                    </tr>
-                `;
+            <tr>
+                <td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">
+                    No se encontraron pedidos. Intenta crear uno nuevo.
+                </td>
+            </tr>
+        `;
           return;
         }
 
@@ -1470,43 +1531,96 @@
           }
 
           orderRow.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${order.numero_compra}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${provider.nombre}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${formatDate(order.fecha_orden)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        $${order.total.toFixed(2)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                            ${statusLabel}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewOrderDetails(${
-                          order.id_compra
-                        })">
-                            Ver
-                        </button>
-                        ${
-                          order.estado === "pendiente"
-                            ? `
-                            <button class="text-red-600 hover:text-red-900" onclick="cancelOrder(${order.id_compra})">
-                                Cancelar
-                            </button>
-                        `
-                            : ""
-                        }
-                    </td>
-                `;
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                ${order.numero_compra}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${provider.nombre}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${formatDate(order.fecha_orden)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                $${order.total.toFixed(2)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                    ${statusLabel}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewOrderDetails(${
+                  order.id_compra
+                })">
+                    Ver
+                </button>
+                ${
+                  order.estado === "pendiente" || order.estado === "procesado"
+                    ? `
+                    <button class="text-red-600 hover:text-red-900" onclick="cancelarCompra(${order.id_compra})">
+                        Cancelar
+                    </button>
+                    `
+                    : ""
+                }
+            </td>
+        `;
 
           pedidosTableBody.appendChild(orderRow);
         });
+      }
+
+      // Funcion para cargar las ordenes de los pedidos
+      function loadProviderOrders(providerId) {
+        // Mostrar pestaña de pedidos
+        pedidosTab.click();
+
+        // Mostrar indicador de carga
+        pedidosTableBody.innerHTML = `
+        <tr>
+            <td colspan="6" class="px-6 py-4 text-center">
+                <div class="flex justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                </div>
+                <p class="mt-2 text-gray-500">Cargando pedidos del proveedor...</p>
+            </td>
+        </tr>
+    `;
+
+        // Cargar pedidos filtrados por proveedor
+        axios
+          .get(`/compras?id_proveedor=${providerId}`)
+          .then((response) => {
+            currentOrders = response.data;
+            renderOrders();
+
+            // Si hay resultados, mostrar mensaje
+            if (currentOrders.length > 0) {
+              showNotification(
+                `Se encontraron ${currentOrders.length} pedidos para este proveedor`,
+                "success"
+              );
+            } else {
+              showNotification(
+                "No se encontraron pedidos para este proveedor",
+                "info"
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Error cargando pedidos del proveedor:", error);
+
+            // Fallback a datos de prueba filtrados
+            currentOrders = getMockOrders().filter(
+              (o) => o.id_proveedor == providerId
+            );
+            renderOrders();
+
+            showNotification(
+              "Error al cargar pedidos del proveedor. Usando datos de muestra.",
+              "error"
+            );
+          });
       }
 
       // Initialize order creation
@@ -1517,10 +1631,10 @@
       // Open add order modal
       function openAddOrderModal() {
         orderDetailsList.innerHTML = `
-                <tr id="noProductsRow">
-                    <td colspan="5" class="px-4 py-3 text-sm text-gray-500 text-center">No hay productos agregados</td>
-                </tr>
-            `;
+                      <tr id="noProductsRow">
+                          <td colspan="5" class="px-4 py-3 text-sm text-gray-500 text-center">No hay productos agregados</td>
+                      </tr>
+                  `;
 
         orderForm.reset();
         orderDetails = [];
@@ -1674,10 +1788,10 @@
       function renderOrderDetails() {
         if (orderDetails.length === 0) {
           orderDetailsList.innerHTML = `
-                    <tr id="noProductsRow">
-                        <td colspan="5" class="px-4 py-3 text-sm text-gray-500 text-center">No hay productos agregados</td>
-                    </tr>
-                `;
+                          <tr id="noProductsRow">
+                              <td colspan="5" class="px-4 py-3 text-sm text-gray-500 text-center">No hay productos agregados</td>
+                          </tr>
+                      `;
           return;
         }
 
@@ -1687,24 +1801,24 @@
           const detailRow = document.createElement("tr");
 
           detailRow.innerHTML = `
-                    <td class="px-4 py-3 text-sm">
-                        ${detail.producto.nombre}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        ${detail.cantidad_ordenada}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        $${detail.precio_unitario.toFixed(2)}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        $${detail.subtotal.toFixed(2)}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        <button type="button" class="text-red-600 hover:text-red-900" onclick="removeOrderDetail(${index})">
-                            Eliminar
-                        </button>
-                    </td>
-                `;
+                          <td class="px-4 py-3 text-sm">
+                              ${detail.producto.nombre}
+                          </td>
+                          <td class="px-4 py-3 text-sm">
+                              ${detail.cantidad_ordenada}
+                          </td>
+                          <td class="px-4 py-3 text-sm">
+                              $${detail.precio_unitario.toFixed(2)}
+                          </td>
+                          <td class="px-4 py-3 text-sm">
+                              $${detail.subtotal.toFixed(2)}
+                          </td>
+                          <td class="px-4 py-3 text-sm">
+                              <button type="button" class="text-red-600 hover:text-red-900" onclick="removeOrderDetail(${index})">
+                                  Eliminar
+                              </button>
+                          </td>
+                      `;
 
           orderDetailsList.appendChild(detailRow);
         });
@@ -1803,73 +1917,87 @@
 
       // View order details
       function viewOrderDetails(orderId) {
-        const order = currentOrders.find((o) => o.id_compra === orderId);
-        if (!order) return;
+        axios
+          .get(`/compras/${orderId}`)
+          .then((response) => {
+            const order = response.data;
+            const provider = currentProviders.find(
+              (p) => p.id_proveedor === order.id_proveedor
+            ) || { nombre: "Proveedor no encontrado" };
+            detailsTitle.textContent = `Detalles del Pedido #${order.id_compra}`;
+            detailsNumber.textContent = order.numero_compra;
+            let statusLabel = "";
+            switch (order.estado) {
+              case "pendiente":
+                statusLabel = "Pendiente";
+                break;
+              case "procesado":
+                statusLabel = "Procesado";
+                break;
+              case "entregado":
+                statusLabel = "Entregado";
+                break;
+              case "cancelado":
+                statusLabel = "Cancelado";
+                break;
+              default:
+                statusLabel = order.estado;
+            }
 
-        const provider = currentProviders.find(
-          (p) => p.id_proveedor === order.id_proveedor
-        ) || { nombre: "Proveedor no encontrado" };
+            detailsStatus.textContent = statusLabel;
+            detailsProvider.textContent = provider.nombre;
+            detailsDate.textContent = formatDate(order.fecha_orden);
+            detailsNotes.textContent = order.notas || "Sin notas";
 
-        detailsTitle.textContent = `Detalles del Pedido #${order.id_compra}`;
-        detailsNumber.textContent = order.numero_compra;
+            // Mostrar detalles de productos
+            detailsProductList.innerHTML = "";
 
-        let statusLabel = "";
-        switch (order.estado) {
-          case "pendiente":
-            statusLabel = "Pendiente";
-            break;
-          case "procesado":
-            statusLabel = "Procesado";
-            break;
-          case "entregado":
-            statusLabel = "Entregado";
-            break;
-          case "cancelado":
-            statusLabel = "Cancelado";
-            break;
-          default:
-            statusLabel = order.estado;
-        }
+            order.detalles.forEach((detail) => {
+              const product = currentProducts.find(
+                (p) => p.id_producto === detail.id_producto
+              ) || { nombre: "Producto no encontrado" };
 
-        detailsStatus.textContent = statusLabel;
-        detailsProvider.textContent = provider.nombre;
-        detailsDate.textContent = formatDate(order.fecha_orden);
-        detailsNotes.textContent = order.notas || "Sin notas";
-
-        // For demonstration purposes, generate mock details
-        const mockDetails = getMockOrderDetails(order.id_compra);
-
-        detailsProductList.innerHTML = "";
-
-        mockDetails.forEach((detail) => {
-          const product = currentProducts.find(
-            (p) => p.id_producto === detail.id_producto
-          ) || { nombre: "Producto no encontrado" };
-
-          const detailRow = document.createElement("tr");
-          detailRow.innerHTML = `
-                    <td class="px-4 py-3 text-sm">
-                        ${product.nombre}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        ${detail.cantidad_ordenada}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        $${detail.precio_unitario.toFixed(2)}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        $${detail.subtotal.toFixed(2)}
-                    </td>
+              const detailRow = document.createElement("tr");
+              detailRow.innerHTML = `
+                    <td class="px-4 py-3 text-sm">${product.nombre}</td>
+                    <td class="px-4 py-3 text-sm">${
+                      detail.cantidad_ordenada
+                    }</td>
+                    <td class="px-4 py-3 text-sm">$${detail.precio_unitario.toFixed(
+                      2
+                    )}</td>
+                    <td class="px-4 py-3 text-sm">$${detail.subtotal.toFixed(
+                      2
+                    )}</td>
                 `;
 
-          detailsProductList.appendChild(detailRow);
-        });
+              detailsProductList.appendChild(detailRow);
+            });
 
-        detailsSubtotal.textContent = `$${order.subtotal.toFixed(2)}`;
-        detailsTax.textContent = `$${order.impuestos.toFixed(2)}`;
-        detailsTotal.textContent = `$${order.total.toFixed(2)}`;
+            // Configurar totales
+            detailsSubtotal.textContent = `$${order.subtotal.toFixed(2)}`;
+            detailsTax.textContent = `$${order.impuestos.toFixed(2)}`;
+            detailsTotal.textContent = `$${order.total.toFixed(2)}`;
 
-        detailsModal.classList.remove("hidden");
+            // Mostrar modal
+            detailsModal.classList.remove("hidden");
+          })
+          .catch((error) => {
+            console.error("Error al cargar detalles del pedido:", error);
+
+            // Fallback a datos de prueba
+            const order = currentOrders.find((o) => o.id_compra === orderId);
+            if (order) {
+              const mockDetails = getMockOrderDetails(orderId);
+
+              showNotification(
+                "Error al cargar detalles exactos del pedido. Mostrando aproximación.",
+                "warning"
+              );
+            } else {
+              showNotification("No se pudo cargar el pedido.", "error");
+            }
+          });
       }
 
       // Cancel order
@@ -1880,21 +2008,77 @@
           .post(`/compras/${orderId}/cancelar`)
           .then((response) => {
             showNotification("Pedido cancelado correctamente", "success");
+            loadOrders(); // Recargar la lista de pedidos
+          })
+          .catch((error) => {
+            console.error("Error al cancelar pedido:", error);
+            showNotification(
+              `Error al cancelar pedido: ${
+                error.response?.data?.detail || error.message
+              }`,
+              "error"
+            );
+
+            // Si estamos en modo de desarrollo/demo, simulamos la cancelación
+            if (process.env.NODE_ENV === "development") {
+              const orderIndex = currentOrders.findIndex(
+                (o) => o.id_compra === orderId
+              );
+              if (orderIndex !== -1) {
+                currentOrders[orderIndex].estado = "cancelado";
+                renderOrders();
+                showNotification(
+                  "Pedido cancelado correctamente (modo demo)",
+                  "success"
+                );
+              }
+            }
+          });
+      }
+
+      //   Cancelar Compra
+
+      function cancelarCompra(compraId) {
+        if (
+          !confirm(
+            "¿Está seguro que desea cancelar esta compra? Esta acción no se puede deshacer."
+          )
+        ) {
+          return;
+        }
+
+        axios
+          .post(`/compras/${compraId}/cancelar`)
+          .then((response) => {
+            console.log("Compra cancelada exitosamente:", response.data);
+            showNotification("Compra cancelada exitosamente", "success");
+
+            // Actualizar estado en la lista actual
+            const compraIndex = currentOrders.findIndex(
+              (o) => o.id_compra === compraId
+            );
+            if (compraIndex !== -1) {
+              currentOrders[compraIndex].estado = "cancelado";
+              renderOrders(); // Volver a renderizar la tabla
+            }
+
+            // Opcionalmente, recargar todas las compras desde la API
             loadOrders();
           })
           .catch((error) => {
-            console.error("Error canceling order:", error);
+            console.error("Error al cancelar la compra:", error);
 
-            // For demonstration, we'll simulate a successful cancellation
-            const orderIndex = currentOrders.findIndex(
-              (o) => o.id_compra === orderId
-            );
-            if (orderIndex !== -1) {
-              currentOrders[orderIndex].estado = "cancelado";
-              renderOrders();
+            // Mostrar mensaje de error específico si está disponible
+            if (
+              error.response &&
+              error.response.data &&
+              error.response.data.detail
+            ) {
+              showNotification(`Error: ${error.response.data.detail}`, "error");
+            } else {
               showNotification(
-                "Pedido cancelado correctamente (modo demo)",
-                "success"
+                "Error al cancelar la compra. Intente nuevamente.",
+                "error"
               );
             }
           });
@@ -1907,12 +2091,11 @@
 
       // Close product modal
       function handleCloseProductModal() {
-        console.log("Cerrando modal de productos...");
         productModal.classList.add("hidden");
       }
 
       // Close details modal
-      function closeDetailsModal() {
+      function handleCloseDetailsModal() {
         detailsModal.classList.add("hidden");
       }
 
@@ -2224,8 +2407,8 @@
         return details;
       }
 
-      // Initialize application
-      loadProviders();
+      // Llamar a la función de inicio cuando se cargue el DOM
+      document.addEventListener("DOMContentLoaded", initApp);
     </script>
   </body>
 </html>
