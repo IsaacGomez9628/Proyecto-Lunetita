@@ -1,30 +1,66 @@
-from flask import Flask, render_template, redirect, url_for
+
+from flask import Flask, render_template, request
+import requests
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
+API_URL = "http://127.0.0.1:8000"
+
+@app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/productos', methods=['GET', 'POST'])
+@app.route('/productos')
 def productos():
-    return render_template('productos.html')
+    try:
+        response = requests.get(f"{API_URL}/productos")
+        productos = response.json()
+    except:
+        productos = []
+    return render_template('productos.html', productos=productos)
 
-@app.route('/empleados', methods=['GET', 'POST'])
+@app.route('/empleados')
 def empleados():
-    return render_template('empleados.html')
+    try:
+        response = requests.get(f"{API_URL}/empleados")
+        empleados = response.json()
+    except:
+        empleados = []
+    return render_template('empleados.html', empleados=empleados)
 
-@app.route('/proveedores', methods=['GET', 'POST'])
+@app.route('/proveedores')
 def proveedores():
-    return render_template('proveedores.html')
+    try:
+        response = requests.get(f"{API_URL}/proveedores")
+        proveedores = response.json()
+    except:
+        proveedores = []
+    return render_template('proveedores_pedidos.html', proveedores=proveedores)
 
-@app.route('/clientes', methods=['GET', 'POST'])
+@app.route('/clientes')
 def clientes():
-    return render_template('clientes.html')
+    try:
+        response = requests.get("http://127.0.0.1:8000/clientes")
+        clientes = response.json()
 
-@app.route('/pos', methods=['GET', 'POST'])
+        # Mostramos cada objeto recibido para revisar su formato
+        print("📦 CLIENTES DESDE API:")
+        for c in clientes:
+            print(" ->", c, type(c))
+    except Exception as e:
+        print("❌ Error al obtener clientes:", e)
+        clientes = []
+    
+    return render_template('clientes.html', clientes=clientes)
+
+@app.route('/pos')
 def pos():
-    return render_template('POS.html')
+    try:
+        response = requests.get(f"{API_URL}/productos")
+        productos = response.json()
+    except:
+        productos = []
+    return render_template('POS.html', productos=productos)
 
 if __name__ == '__main__':
     app.run(debug=True, port=15000)
